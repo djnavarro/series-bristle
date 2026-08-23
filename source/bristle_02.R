@@ -71,7 +71,8 @@ art_generator <- function(seed) {
         stroke,
         n_bristles = nb, 
         spread = sp, 
-        fray = 0.4
+        fray = 0.4,
+        n = 500
       )
   }
 
