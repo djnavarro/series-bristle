@@ -1,7 +1,7 @@
 # set up ------------------------------------------------------------------
 
 name <- "bristle"    # only change this for an entirely new system
-version <- 6         # increment to 2 for "my-art-system_02.R", etc
+version <- 7         # increment to 2 for "my-art-system_02.R", etc
 format <- "png"      # png is usually a good choice!
 
 # define common helper functions
@@ -17,7 +17,7 @@ art_generator <- function(seed) {
 
   set.seed(seed)
 
-  n_strokes <- sample(15:60, 1)
+  n_strokes <- 100
 
   r_colors <- colours(distinct = TRUE)
   r_colhsv <- rgb2hsv(col2rgb(colours(distinct = TRUE)))
@@ -44,18 +44,20 @@ art_generator <- function(seed) {
       x_min = x_mid - .5,
       y_min = y_mid - .5,
       x_max = x_mid + .5,
-      y_max = y_mid + .5
+      y_max = y_mid + .5,
+      size = 1
     )
   
   locs_lrg <- tidyr::expand_grid(
-    x_mid = -4.5:4.5,
-    y_mid = -1.5:1.5
+    x_mid = -3:3,
+    y_mid = -1:1
   ) |> 
     dplyr::mutate(
-      x_min = x_mid - 1,
-      y_min = y_mid - 1,
-      x_max = x_mid + 1,
-      y_max = y_mid + 1
+      x_min = x_mid - 1.5,
+      y_min = y_mid - 1.5,
+      x_max = x_mid + 1.5,
+      y_max = y_mid + 1.5,
+      size = 3
     )
   
   overlap <- function(row1, row2) {
@@ -80,7 +82,7 @@ art_generator <- function(seed) {
     dplyr::mutate(flag = FALSE)
 
   for (r2 in 2:n_all) {
-    for (r1 in 1:r1) {
+    for (r1 in 1:(r2-1)) {
       r1_ok <- !locs_all$flag[r1] 
       r2_ok <- !locs_all$flag[r2] 
       if (r1_ok & r2_ok) {
@@ -92,14 +94,14 @@ art_generator <- function(seed) {
 
   locs_valid <- locs_all |> dplyr::filter(flag == FALSE)
 
+  locs <- locs_valid |> 
+    dplyr::slice_sample(n = n_strokes, replace = TRUE)
 
+  stroke_dx <- locs$x_mid
+  stroke_dy <- locs$y_mid
+  stroke_sz <- locs$size
 
-  stroke_dx <- sample(x_loc, n_strokes, replace = TRUE)
-  stroke_dy <- sample(y_loc, n_strokes, replace = TRUE)
-
-  offset <- stats::runif(n_strokes, min = -pi/2, max = pi/2)
-
-  amp <- stats::runif(n_strokes, min = .2, max = .9)
+  amp <- sample(1:4, n_strokes, TRUE) * stroke_sz * .75
   turns <- stats::runif(n_strokes, min = .5, max = 3)
 
   bg_col <- sketchpad::color_darken(palette[length(palette)], amount = .5)
@@ -115,10 +117,9 @@ art_generator <- function(seed) {
     )
   )
 
-  nb <- sample(3:6, 1)
-  sp <- stats::runif(1, .05, .1) * nb
-
   for (s in 1:n_strokes) {
+    nb <- sample(3:6, 1)
+    sp <- stats::runif(1, .05, .1) * nb
 
     noise <- sketchpad::noise_field(
       noise = ambient::gen_simplex,
@@ -133,7 +134,7 @@ art_generator <- function(seed) {
         x = stroke_dx[s],
         y = stroke_dy[s],
         radius_start = .1 * amp[s],
-        radius_end = 1 * amp[s],
+        radius_end = .4 * amp[s],
         turns = turns[s]
       ),
       width = 0.15,
